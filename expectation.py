@@ -78,6 +78,52 @@ def expvals_sampling(circuit: Circuit, ops: jnp.ndarray, n_samples: int, seed: i
     
     return expvals, std_devs
 
+
+# TECHNICAL NOTE: COMMUTATION RULES AND THE '@' OPERATOR
+"""
+    The mathematical logic follows the randomized method for estimating IQP expectation 
+    values as derived in Eq. (14) of arXiv:2503.02934.
+
+    The instruction `ops_gen = (ops @ generators.T) % 2`:
+
+    Measuring a Pauli-Z string (an 'op') at the end of an IQP circuit is equivalent
+    to measuring a Pauli-X string before the Hadamard layer. Let's call this O_X.
+    The expectation value depends on how O_X evolves under the diagonal unitary U:
+    U† O_X U = exp(-i Σ θ_k Z_gk) O_X exp(i Σ θ_k Z_gk)
+
+    - If a generator Z_gk COMMUTES with O_X, they bypass each other: the gate 
+        has no effect on that specific observable.
+    - If a generator Z_gk ANTI-COMMUTES with O_X, the observable picks up a phase:
+        exp(-i θ Z) O_X exp(i θ Z) = O_X exp(2i θ Z).
+
+    A Pauli-X string and a Pauli-Z string anti-commute if and only if they share
+    an ODD number of active qubits (sites where both have a non-identity operator).
+
+    - `ops @ generators.T`: This matrix multiplication performs a dot product between 
+        each observable and each generator, effectively counting the overlapping qubits.
+    - `% 2`: This filtering operation extracts the parity of the overlap.
+        * 0 (Even) -> Commutation: The phase is 0, the gate is ignored.
+        * 1 (Odd)  -> Anti-commutation: The phase is 2*θ, the gate contributes.
+
+    EIGENVALUE MAPPING:
+    The line `samples_gates = 1 - 2 * ((samples @ generators.T) % 2)` evaluates the 
+    eigenvalues of the generators Z_gk on the classical bitstrings |s>. 
+    Mathematically, it computes (-1)^{s · g_k}, mapping the binary parity {0, 1} 
+    to the physical spectral domain {+1, -1}.
+
+    THE COSINE ESTIMATOR (Eq. 14):
+    The final step `expvals = jnp.cos(par_ops_gates @ samples_gates.T)` implements the 
+    analytical expectation value. 
+    The term `par_ops_gates @ samples_gates.T` calculates the total accumulated phase 
+    Φ_O(s) for each sample, summing only the contributions from anti-commuting gates 
+    weighted by their eigenvalues.
+    Since the expectation value is the real part of the interference sum over 
+    computational basis states, the cosine of the total phase provides an unbiased 
+    Monte Carlo estimator of the quantum observable:
+    ⟨O⟩ = E_s [ cos( Σ_k 2θ_k · δ_anticomm(O, g_k) · (-1)^{s · g_k} ) ]
+
+"""
+# -----------------------------------------------------------------------------------------
 def expvals_mc(
     params: jnp.ndarray,
     ops: jnp.ndarray,
@@ -86,25 +132,27 @@ def expvals_mc(
     key: Array
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
     """
-    Estimate the expectation values of a batch of Pauli-Z operators for an IQP circuit
-    using a classical Monte Carlo estimator defined in arXiv:2503.02934.
-    
-    Args:
-        params (jnp.ndarray): The effective parameters (phases) of the IQP gates.
-            Shape: (n_generators,)
-        ops (jnp.ndarray): A binary matrix specifying the Pauli-Z operators to measure.
-            Shape: (n_ops, n_qubits), where 1 indicates a Z operator acting on a qubit.
-        generators (jnp.ndarray): A binary matrix specifying the IQP circuit generators.
-            Shape: (n_generators, n_qubits).
-        n_samples (int): The number of classical Monte Carlo samples to draw.
-        key (jax.Array): The JAX PRNG key used to control randomness.
+        Estimate the expectation values of a batch of Pauli-Z operators for an IQP circuit
+        using a classical Monte Carlo estimator defined in arXiv:2503.02934.
         
-    Returns:
-        tuple[jnp.ndarray, jnp.ndarray]: A tuple containing:
-            - mean_expvals (jnp.ndarray): The estimated expectation values for each operator.
-              Shape: (n_ops,).
-            - std_error (jnp.ndarray): The standard error of the mean for each estimate.
-              Shape: (n_ops,).
+        Args:
+            params (jnp.ndarray): The effective parameters (phases $\theta_k$) of the IQP evolution.
+                Shape: (n_generators,). These are the trainable weights of the quantum circuit.
+            ops (jnp.ndarray): A binary matrix specifying the physical observables (Pauli-Z strings) 
+                to measure at the end of the circuit. Shape: (n_ops, n_qubits). 
+                These act as the "queries" we make to the final quantum state.
+            generators (jnp.ndarray): A binary matrix specifying the IQP circuit's architecture 
+                (the Pauli-Z strings $g_k$ that generate the unitaries). Shape: (n_generators, n_qubits).
+                These define the physical interactions within the system.
+            n_samples (int): The number of classical Monte Carlo samples to draw.
+            key (jax.Array): The JAX PRNG key used to control randomness.
+            
+        Returns:
+            tuple[jnp.ndarray, jnp.ndarray]: A tuple containing:
+                - mean_expvals (jnp.ndarray): The estimated expectation values for each operator.
+                Shape: (n_ops,).
+                - std_error (jnp.ndarray): The standard error of the mean for each estimate.
+                Shape: (n_ops,).
     """
     n_qubits = generators.shape[1]
     
@@ -116,17 +164,16 @@ def expvals_mc(
     ops_gen = (ops @ generators.T) % 2
     
     # Compute the parity of the samples with respect to the generators 
-    #    and map the boolean domain {0, 1} to physical eigenvalues {+1, -1}
+    # and map the boolean domain {0, 1} to physical eigenvalues {+1, -1}
     samples_gates = 1 - 2 * ((samples @ generators.T) % 2)
     
-    # Compute the phase angles for the estimator
+    # Apply phases
     par_ops_gates = 2 * params * ops_gen
     
     # Evaluate the Monte Carlo estimator (cosine of the phases)
-    # The dot product inherently sums over the generator contributions for each sample
+    # The dot product sums over the generator contributions for each sample
     expvals = jnp.cos(par_ops_gates @ samples_gates.T)
     
-    # Compute statistics: expected value (mean) and standard error
     mean_expvals = jnp.mean(expvals, axis=-1)
     std_error = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(n_samples)
     
