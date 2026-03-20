@@ -18,6 +18,8 @@ def expvals_contraction(circ: Circuit, sites):
                 expvals.append(circ.local_expectation(G=pauli("Z"), where=op[0]).real)
             elif len(op) == 2:
                 expvals.append(circ.local_expectation(G=pauli("Z")&pauli("Z"), where=op).real)
+            else: raise ValueError("Only 1 or 2-site operators are supported.")
+
         return jnp.array(expvals)
 
 def expvals_sampling(circuit: Circuit, ops: jnp.ndarray, n_samples: int, seed: int = None) -> tuple:
