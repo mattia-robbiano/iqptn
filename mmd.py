@@ -3,8 +3,8 @@ import jax.numpy as jnp
 from jax import Array
 from typing import List, Optional
 
-@jax.jit
-def _mmd_loss_core_jit(
+@jax.jit(static_argnames=['n_samples'])
+def _mmd_mc_core(
     params: jnp.ndarray, 
     generators: jnp.ndarray, 
     ground_truth: jnp.ndarray, 
@@ -63,10 +63,31 @@ def _mmd_loss_core_jit(
     # Return the average loss over the sampled operators
     return jnp.mean(res)
 
-# We mark n_samples as static so JAX can unroll or optimize loops if necessary
-_mmd_loss_core_jit = jax.jit(_mmd_loss_core_jit, static_argnames=['n_samples'])
 
-def mmd_loss_vanilla(
+# THEORETICAL NOTE: STOCHASTIC APPROXIMATION LEVELS (n_ops vs n_samples)
+"""
+    The MMD squared loss estimation involves two distinct levels of Monte Carlo 
+    approximation, each targeting a different source of exponential complexity.
+
+    1. n_ops (Approximation of the Kernel/Loss Space):
+       As derived in Eq. (111) of arXiv:2503.02934, the exact MMD loss with a Gaussian 
+       kernel requires a summation over all 2^N_visible Pauli-Z strings. 
+       `n_ops` defines the number of operators randomly sampled from this space 
+       according to the probability distribution p_sigma. 
+       - Low n_ops: High gradient noise but significantly reduced computational overhead.
+       - High n_ops: Lower variance in the loss landscape, approaching the exact 
+         analytical MMD.
+
+    2. n_samples (Approximation of the Quantum State):
+       For each of the chosen `n_ops` operators, we must estimate the quantum 
+       expectation value <O>. Calculating this exactly requires full contraction 
+       of the 2^N Hilbert space. 
+       `n_samples` defines the number of classical bitstrings drawn to compute 
+       the Monte Carlo average via the cosine estimator (Eq. 14).
+       - This parameter controls the statistical precision of each individual 
+         operator measurement ("shots").
+"""
+def mmd_mc(
     params: jnp.ndarray, 
     generators: jnp.ndarray, 
     ground_truth: jnp.ndarray, 
@@ -128,7 +149,7 @@ def mmd_loss_vanilla(
     all_ops = jnp.array(all_ops_list, dtype=jnp.float32).T
 
     # 3. Call the JIT-compiled mathematical core
-    loss = _mmd_loss_core_jit(
+    loss = _mmd_mc_core(
         params=params, 
         generators=generators, 
         ground_truth=ground_truth, 
