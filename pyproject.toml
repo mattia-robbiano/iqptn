@@ -1,3 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iqptn"
+version = "0.1.0"
+description = "IQP Tensor Network – tools for training and evaluating IQP circuits"
+requires-python = ">=3.10"
+dependencies = [
+    "jax",
+    "numpy",
+    "numba",
+    "quimb",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["tests"]
+testpaths = ["test"]
