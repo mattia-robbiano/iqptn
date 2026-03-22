@@ -1,19 +1,10 @@
 # IQP Tensor Network (iqptn)
 
-A high-performance Python package for simulating, training, and evaluating **Instantaneous Quantum Polynomial (IQP)** circuits using Tensor Network (TN) contraction, Monte Carlo (MC) sampling, and JAX-accelerated statistical methods.
+A high-performance Python package for pseudo-simulation of **Instantaneous Quantum Polynomial (IQP)** circuits using Tensor Network, Monte Carlo and BMS sampling.
 
 ## Overview
 
-`iqptn` is designed for efficient research on IQP circuits, particularly for tasks involving Maximum Mean Discrepancy (MMD) loss optimization and large-scale sampling. It leverages `quimb` for tensor network operations and `jax` for high-performance, differentiable classical simulations.
-
-### Key Features
-
-- **Efficient Simulation**: Build and simulate IQP circuits using `quimb` Tensor Networks.
-- **MMD Loss Calculation**: JIT-compiled MMD loss estimation with unbiased finite-sample corrections, optimized for training generative models.
-- **Monte Carlo Estimation**: Randomized estimators for expectation values of Pauli-Z strings, avoiding exponential Hilbert space overhead.
-- **Tensor Network Contraction**: Exact and approximate expectation value calculation via TN contraction (supporting MPS/PEPS backends).
-- **Ising Data Generation**: Metropolis-Hastings sampler for 2D Ising models to generate training datasets.
-- **Statistical Heuristics**: Automatic bandwidth selection (median heuristic) for RBF kernels in MMD.
+`iqptn` is designed for estimating Maximum Mean Discrepancy loss, optimization and large-scale sampling. It leverages `quimb` for tensor network operations and `jax` for high-performance, differentiable classical simulations.
 
 ## Project Structure
 
