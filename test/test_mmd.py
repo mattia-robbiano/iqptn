@@ -1,10 +1,10 @@
 import jax.random as random
 import jax.numpy as jnp
 import numpy as np
-from models import IQPTensorNetwork, local_gates
-from euristics import sigma_heuristic
-from utils import convert_to_jnp_ndarray
-from mmd import mmd_mc
+from iqptn.models import IQPTensorNetwork, local_gates
+from iqptn.euristics import sigma_heuristic
+from iqptn.utils import convert_to_jnp_ndarray
+from iqptn.mmd import mmd_mc
 from iqpopt.gen_qml import mmd_loss_iqp
 from iqpopt import IqpSimulator
 from iqpopt.utils import local_gates as local_gates_iqpopt

@@ -3,7 +3,7 @@ import jax
 import numpy as np
 from iqpopt import IqpSimulator
 from iqpopt.utils import local_gates
-from expectation import expvals_mc
+from iqptn.expectation import expvals_mc
 
 def convert_to_binary_matrix(gate_list: list, n_qubits: int) -> jnp.ndarray:
     """
