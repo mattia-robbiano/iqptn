@@ -147,6 +147,10 @@ def mmd_mc(
             all_ops_list.append(jnp.zeros(n_ops))
             
     all_ops = jnp.array(all_ops_list, dtype=jnp.float32).T
+    
+    # To match iqpopt randomness management and perform tests
+    # TODO remove in the future
+    key, subkey_samples = jax.random.split(key, 2)
 
     # 3. Call the JIT-compiled mathematical core
     loss = _mmd_mc_core(
@@ -155,7 +159,7 @@ def mmd_mc(
         ground_truth=ground_truth, 
         visible_ops=visible_ops, 
         all_ops=all_ops, 
-        key=key, 
+        key=subkey_samples, 
         n_samples=n_samples
     )
 
