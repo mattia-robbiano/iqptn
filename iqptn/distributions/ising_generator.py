@@ -3,7 +3,6 @@ from numba import njit
 import time
 import argparse
 from pathlib import Path
-import matplotlib.pyplot as plt
 
 @njit
 def energetic_cost(grid, x, y, L, h, fields):
