@@ -1,6 +1,7 @@
 from .euristics import gaussian_kernel, median_heuristic, sigma_heuristic
 from .expectation import expvals_contraction, expvals_sampling, expvals_mc
-from .ising_generator import run_metropolis
+from .distributions.ising_generator import run_metropolis
+from .distributions.boltzman_entropy_generator import generate_distribution_with_target_entropy, generate_uniform_entropy_distributions
 from .mmd import mmd_mc
 from .models import local_gates, RStringZ, IQPTensorNetwork
 from .utils import convert_to_jnp_ndarray
@@ -18,4 +19,6 @@ __all__ = [
     "RStringZ",
     "IQPTensorNetwork",
     "convert_to_jnp_ndarray",
+    "generate_distribution_with_target_entropy",
+    "generate_uniform_entropy_distributions",
 ]
