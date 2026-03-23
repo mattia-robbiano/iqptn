@@ -1,3 +1,5 @@
 __pycache__/
 datasets/
 .pytest_cache/
+iqptn.egg-info/
+training_results.npz
