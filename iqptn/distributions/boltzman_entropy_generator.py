@@ -69,3 +69,36 @@ def generate_distribution_with_target_entropy(n_states: int, target_entropy: flo
         beta_opt = brentq(entropy_diff, 0.0, 100000.0)
         
     return boltzmann_dist(beta_opt)
+
+import jax
+import jax.numpy as jnp
+
+def sample_dataset_from_distribution(probabilities: jnp.ndarray, n_qubits: int, n_samples: int, key: jax.Array) -> jnp.ndarray:
+    """
+    Campiona un dataset di training di bitstrings a partire da una distribuzione di probabilità.
+    
+    Args:
+        probabilities (jnp.ndarray): La distribuzione di probabilità esatta su 2^n_qubits stati 
+                                     (shape: (2^n_qubits,)).
+        n_qubits (int): Il numero di qubit (ovvero il numero di features).
+        n_samples (int): Il numero di campioni da estrarre (grandezza del dataset).
+        key (jax.Array): Chiave PRNG di JAX.
+        
+    Returns:
+        jnp.ndarray: Il dataset di training di shape (n_samples, n_qubits) contenente 0 e 1.
+    """
+    n_states = probabilities.shape[0]
+    
+    # 1. Campioniamo gli interi (da 0 a 2^n_qubits - 1) usando le probabilità target
+    sampled_indices = jax.random.choice(key, jnp.arange(n_states), shape=(n_samples,), p=probabilities)
+    
+    # 2. Decodifichiamo gli indici interi in bitstrings
+    # Creiamo un array di shift per isolare ogni bit tramite operatori bit-a-bit.
+    # Esempio per n_qubits=3: shifts = [2, 1, 0]
+    shifts = jnp.arange(n_qubits - 1, -1, -1)
+    
+    # Utilizziamo il broadcasting: (n_samples, 1) >> (n_qubits,) -> (n_samples, n_qubits)
+    # L'AND bit a bit con 1 estrae l'n-esimo bit.
+    bitstrings = (sampled_indices[:, None] >> shifts) & 1
+    
+    return bitstrings
