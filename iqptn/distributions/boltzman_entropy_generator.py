@@ -71,7 +71,7 @@ def generate_distribution_with_target_entropy(n_states: int, target_entropy: flo
     return boltzmann_dist(beta_opt)
 
 
-def generate_uniform_entropy_distributions(
+def boltzmann_batch(
     n_dist: int,
     n_qubits: int,
     key: jax.Array,
