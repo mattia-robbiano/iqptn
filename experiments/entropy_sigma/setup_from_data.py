@@ -30,7 +30,7 @@ sigmas_lb=[]
 for entropy_rate_value in entropy_rate:
 
     n_states = 2**n_qubits
-    target_entropy = jnp.log(n_training_samples) * entropy_rate_value
+    target_entropy = jnp.log(n_states) * entropy_rate_value
     key_dist, key_sample, key = jax.random.split(key, 3)
     ground_truth_dist = generate_distribution_with_target_entropy(n_states, target_entropy, key_dist)
     training_data = sample_dataset_from_distribution(ground_truth_dist, n_qubits, n_training_samples, key_sample)
