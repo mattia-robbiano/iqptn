@@ -3,14 +3,17 @@
         "n_qubits": 9,
         "max_weight": 3
     },
+
     "distribution": {
         "n_training_samples": 10000,
         "entropy_rate": 0.2
     },
+
     "training": {
         "ops_covarage": 0.5,
-        "lr": 0.01,
         "n_samples": 1000,
+        "sigma": "euristic",
+        "lr": 0.01,
         "epochs": 1000
     }
 }
