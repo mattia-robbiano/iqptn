@@ -2,7 +2,7 @@ import jax.random as random
 import jax.numpy as jnp
 import numpy as np
 from iqptn.models import IQPTensorNetwork, local_gates
-from iqptn.euristics import sigma_heuristic
+from iqptn.iqptn.sigma import sigma_spectrum
 from iqptn.utils import convert_to_jnp_ndarray
 from iqptn.mmd import mmd_mc
 from iqpopt.gen_qml import mmd_loss_iqp
